@@ -1,0 +1,11 @@
+venv/
+.vscode/
+.idea/
+__pycache__/
+social_network/media/
+social_network/social_network/__pycache__/
+social_network/posts/__pycache__/
+social_network/posts/migrations/
+social_network/users/__pycache__/
+social_network/users/migrations/
+social_network/db.sqlite3
