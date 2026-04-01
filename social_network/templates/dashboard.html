@@ -1,0 +1,61 @@
+<!-- templates/dashboard.html -->
+{% extends 'base.html' %}
+
+{% block title %}Профиль - Social Network{% endblock %}
+
+{% block content %}
+<div id="userInfo" class="user-info">
+    <h1>👤 Личный кабинет</h1>
+    <div id="message" class="message hidden"></div>
+    <div id="loading">Загрузка...</div>
+    <div id="userData" class="hidden">
+        <h2 id="userUsername"></h2>
+        <p><strong>Email:</strong> <span id="userEmail"></span></p>
+        <p><strong>ID:</strong> <span id="userId"></span></p>
+        <p><strong>Дата регистрации:</strong> <span id="userDateJoined"></span></p>
+        <a  class="link" href="/posts/">📸 Посты</a>
+        <button id="logoutBtn" class="logout-btn">🚪 Выйти</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function loadUserData() {
+        try {
+            const user = await apiRequest(`${API_BASE}/users/me/`);
+
+            document.getElementById('userUsername').textContent = `@${user.username}`;
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('userId').textContent = user.id;
+            document.getElementById('userDateJoined').textContent = new Date(user.date_joined).toLocaleDateString('ru-RU');
+
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('userData').classList.remove('hidden');
+
+        } catch (error) {
+            document.getElementById('loading').classList.add('hidden');
+            showMessage('message', 'Ошибка загрузки данных. Выполните вход заново.', 'error');
+
+            setTimeout(() => {
+                window.location.href = '/login/';
+            }, 2000);
+        }
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        try {
+            await apiRequest(`${API_BASE}/users/logout/`, 'POST');
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
+            showMessage('message', 'Вы успешно вышли из системы', 'success');
+            setTimeout(() => {
+                window.location.href = '/login/';
+            }, 1000);
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', loadUserData);    
+</script>
+{% endblock %}

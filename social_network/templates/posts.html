@@ -1,0 +1,679 @@
+<!-- templates/posts.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Network</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; }
+        
+        /* Header */
+        .header { background: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e1e1e1; position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 20px; font-weight: bold; color: #667eea; text-decoration: none; }
+        .header-right { display: flex; gap: 15px; align-items: center; }
+        .search { padding: 8px 12px; border: 1px solid #e1e1e1; border-radius: 20px; font-size: 14px; width: 200px; }
+        .profile-link { color: #333; text-decoration: none; font-size: 14px; cursor: pointer; }
+        .profile-link:hover { color: #667eea; }
+        
+        /* Container */
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        
+        /* Create Post */
+        .create-post { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .create-post textarea { width: 100%; border: none; resize: none; font-size: 16px; outline: none; min-height: 80px; }
+        .create-post-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e1e1e1; }
+        .image-upload { display: flex; align-items: center; gap: 10px; }
+        .image-upload input[type="file"] { display: none; }
+        .image-upload label { cursor: pointer; color: #667eea; font-size: 14px; }
+        .btn { padding: 8px 20px; border: none; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5a6fd6; }
+        .btn-secondary { background: #e1e1e1; color: #333; }
+        .btn-secondary:hover { background: #d1d1d1; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-sm { padding: 6px 12px; font-size: 13px; }
+        
+        /* Posts */
+        .post { background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .post-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
+        .post-author { font-weight: 600; color: #333; }
+        .post-date { color: #999; font-size: 12px; }
+        .post-text { color: #333; line-height: 1.5; margin-bottom: 12px; white-space: pre-wrap; }
+
+        .post-image-wrapper {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 1;
+            background: #f8f8fa;
+        }
+        .post-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .post-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        .post-actions { display: flex; gap: 10px; }
+        
+        /* Loading */
+        .loading { text-align: center; padding: 40px; color: #999; }
+        .hidden { display: none !important; }
+        
+        /* Preview */
+        .preview-grid {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+        .preview-item {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .preview-remove {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #9b59b6;
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 13px;
+            cursor: pointer;
+        }       
+        /* === MODALS === */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            transform: translateY(-20px);
+            transition: transform 0.2s;
+        }
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #333;
+        }
+        .modal-text {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .modal-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e1e1e1;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            outline: none;
+        }
+        .modal-input:focus {
+            border-color: #667eea;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .modal-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+        }
+        .modal-close:hover { color: #333; }
+        
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 2000;
+            transition: transform 0.3s;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        .toast.success { background: #28a745; }
+        .toast.error { background: #dc3545; }
+
+        /* Комментарии */
+        .comments-section {
+            border-top: 1px solid #eee;
+            margin-top: 12px;
+            padding-top: 12px;
+        }
+        .comments-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        .comment {
+            padding: 8px 0;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 14px;
+        }
+        .comment-author { font-weight: 600; color: #9b59b6; }
+        .comment-text { color: #555; margin-left: 8px; }
+        .comment-date { color: #999; font-size: 11px; }
+        .comment-form { display: flex; gap: 8px; margin-top: 10px; }
+        .comment-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #e1e1e6;
+            border-radius: 20px;
+            font-size: 14px;
+            outline: none;
+        }
+        .comment-input:focus { border-color: #9b59b6; }
+        .comment-actions { display: flex; gap: 6px; margin-top: 4px; }
+        .comment-btn { font-size: 11px; color: #999; cursor: pointer; }
+        .comment-btn:hover { color: #9b59b6; }
+
+        /* Лайки */
+        .like-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-top: 10px;
+            border-top: 1px solid #f0f0f5;
+        }
+        .like-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .like-btn:hover { background: #f5f5fa; }
+        .like-btn.liked { color: #e74c3c; }
+        .like-count { font-size: 14px; color: #666; font-weight: 500; }
+
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <a href="/" class="logo">Social Network</a>
+        <div class="header-right">
+            <input type="text" class="search" id="searchInput" placeholder="🔍 Поиск...">
+            {% if user.is_authenticated %}
+            <a href="/dashboard/" class="profile-link">👤 Профиль</a>
+            {% else %}
+            <a href="/login/" class="profile-link">Войти</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- Content -->
+    <div class="container">
+        {% if user.is_authenticated %}
+        <!-- Create Post -->
+        <div class="create-post" id="createPostSection">
+            <textarea id="postText" placeholder="Что у вас нового?"></textarea>
+            
+            <!-- Предпросмотр нескольких изображений -->
+            <div class="preview-grid" id="imagePreview"></div>
+            
+            <div class="create-post-actions">
+                <div class="image-upload">
+                    <label for="postImages">📷 Фото (можно несколько)</label>
+                    <input type="file" id="postImages" accept="image/*" multiple>
+                </div>
+                <button class="btn btn-primary" onclick="createPost()">Опубликовать</button>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Posts List -->
+        <div id="postsList">
+            <div class="loading">Загрузка...</div>
+        </div>
+    </div>
+
+    <!-- === MODALS === -->
+    
+    <!-- Confirm Modal -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('confirmModal')">&times;</button>
+            <div class="modal-title" id="confirmTitle">Подтверждение</div>
+            <div class="modal-text" id="confirmText">Вы уверены?</div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('confirmModal')">Отмена</button>
+                <button class="btn btn-danger" id="confirmOk">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prompt Modal -->
+    <div class="modal-overlay" id="promptModal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal('promptModal')">&times;</button>
+            <div class="modal-title" id="promptTitle">Ввод</div>
+            <input type="text" class="modal-input" id="promptInput" placeholder="">
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('promptModal')">Отмена</button>
+                <button class="btn btn-primary" id="promptOk">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+   <!-- Вставьте это в конец templates/posts.html, заменив весь <script> -->
+<script>
+    // === Глобальные переменные ===
+    let currentUser = null;
+    let selectedImages = [];
+
+    // === Инициализация ===
+    document.addEventListener('DOMContentLoaded', async () => {
+        await loadUser();
+        await loadPosts();
+        setupEventListeners();
+    });
+
+    // === Настройка обработчиков ===
+    function setupEventListeners() {
+        // Поиск
+        document.getElementById('searchInput')?.addEventListener('input', (e) => 
+            filterPosts(e.target.value));
+
+        // Выбор нескольких фото
+        document.getElementById('postImages')?.addEventListener('change', handleImageSelect);
+
+        // Модальные окна: закрытие по клику вне
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) closeModal(overlay.id);
+            });
+        });
+
+        // Кнопки модальных окон
+        document.getElementById('confirmOk')?.addEventListener('click', () => {
+            if (window.confirmCb) window.confirmCb();
+            closeModal('confirmModal');
+        });
+        document.getElementById('promptOk')?.addEventListener('click', () => {
+            const val = document.getElementById('promptInput').value;
+            if (window.promptCb) window.promptCb(val);
+            closeModal('promptModal');
+        });
+
+        // Esc закрывает модальные окна
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal('confirmModal');
+                closeModal('promptModal');
+            }
+        });
+    }
+
+    // === Модальные окна ===
+    function showModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id)?.classList.remove('active'); }
+
+    function showConfirm(title, text, onConfirm) {
+        document.getElementById('confirmTitle').textContent = title;
+        document.getElementById('confirmText').textContent = text;
+        window.confirmCb = onConfirm;
+        showModal('confirmModal');
+    }
+
+    function showPrompt(title, placeholder, value, onOk) {
+        document.getElementById('promptTitle').textContent = title;
+        const input = document.getElementById('promptInput');
+        input.placeholder = placeholder;
+        input.value = value || '';
+        window.promptCb = onOk;
+        showModal('promptModal');
+        setTimeout(() => input.focus(), 50);
+    }
+
+    function showToast(msg, type = 'success') {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = `toast ${type} show`;
+        setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    // === API: Пользователь ===
+    async function loadUser() {
+        try {
+            const r = await fetch('/api/users/me/', { credentials: 'include' });
+            if (r.ok) currentUser = await r.json();
+        } catch (e) {}
+    }
+
+    // === API: Загрузка постов ===
+    async function loadPosts() {
+        try {
+            const r = await fetch('/api/posts/', { credentials: 'include' });
+            const posts = await r.json();
+            renderPosts(Array.isArray(posts) ? posts : []);
+        } catch (e) {
+            document.getElementById('postsList').innerHTML = '<div class="loading">Ошибка</div>';
+        }
+    }
+
+    // === Рендер постов ===
+    function renderPosts(posts) {
+        const el = document.getElementById('postsList');
+        if (!posts.length) {
+            el.innerHTML = '<div class="loading">Постов пока нет</div>';
+            return;
+        }
+        el.innerHTML = posts.map(p => `
+            <div class="post" data-id="${p.id}">
+                <div class="post-header">
+                    <span class="post-author">@${p.author?.username||'?'}</span>
+                    <span class="post-date">${new Date(p.created_at).toLocaleString('ru-RU')}</span>
+                </div>
+                <div class="post-text">${escapeHtml(p.text)}</div>
+                ${p.images?.length ? `<div class="post-images">${p.images.map(i=>`<div class="post-image-wrapper"><img src="${i.image}" class="post-image"></div>`).join('')}</div>`:''}
+
+                <!-- Лайки -->
+                <div class="like-section">
+                    <button class="like-btn ${p.is_liked ? 'liked' : ''}" onclick="toggleLike(${p.id})">
+                        ${p.is_liked ? '❤️' : '🤍'}
+                    </button>
+                    <span class="like-count">${p.likes_count || 0}</span>
+                </div>
+
+                <!-- Комментарии -->
+                <div class="comments-section">
+                    <div class="comments-list" id="comments-${p.id}">
+                        ${p.comments?.map(c => `
+                            <div class="comment" data-id="${c.id}">
+                                <span class="comment-author">@${c.author?.username}</span>
+                                <span class="comment-text">${escapeHtml(c.text)}</span>
+                                <div class="comment-date">${new Date(c.created_at).toLocaleString('ru-RU')}</div>
+                                ${currentUser?.id === c.author?.id ? `
+                                    <div class="comment-actions">
+                                        <span class="comment-btn" onclick="editComment(${c.id}, '${escapeHtml(c.text)}')">✏️</span>
+                                        <span class="comment-btn" onclick="deleteComment(${c.id})">🗑️</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `).join('') || '<span style="color:#999;font-size:13px;">Нет комментариев</span>'}
+                    </div>
+                    ${currentUser ? `
+                        <div class="comment-form">
+                            <input type="text" class="comment-input" placeholder="Комментировать..." id="comment-input-${p.id}">
+                            <button class="btn btn-primary btn-sm" onclick="addComment(${p.id})">➤</button>
+                        </div>
+                    ` : '<span style="color:#999;font-size:13px;"><a href="/login/">Войдите</a> для комментирования</span>'}
+                </div>
+
+                ${currentUser?.id === p.author?.id ? `
+                    <div class="post-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="startEdit(${p.id})">✏️</button>
+                        <button class="btn btn-danger btn-sm" onclick="askDelete(${p.id})">🗑️</button>
+                    </div>
+                `:''}
+            </div>
+        `).join('');
+    }
+
+    // === Создание поста ===
+    async function createPost() {
+        const text = document.getElementById('postText')?.value.trim();
+        if (!text) return showToast('Введите текст', 'error');
+
+        const fd = new FormData();
+        fd.append('text', text);
+        selectedImages.forEach(f => fd.append('images', f));
+
+        try {
+            const r = await fetch('/api/posts/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                credentials: 'include',
+                body: fd
+            });
+            if (!r.ok) throw 0;
+            showToast('Пост создан!', 'success');
+            resetPostForm();
+            loadPosts();
+        } catch (e) { showToast('Ошибка', 'error'); }
+    }
+
+    function resetPostForm() {
+        document.getElementById('postText').value = '';
+        selectedImages = [];
+        const prev = document.getElementById('imagePreview');
+        if (prev) { prev.innerHTML = ''; prev.classList.add('hidden'); }
+        const inp = document.getElementById('postImages');
+        if (inp) inp.value = '';
+    }
+
+    // === Выбор и предпросмотр фото ===
+    function handleImageSelect(e) {
+        const files = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/'));
+        const prev = document.getElementById('imagePreview');
+        if (!prev) return;
+
+        files.forEach(file => {
+            if (file.size > 10*1024*1024) return showToast('Файл >10MB', 'error');
+            selectedImages.push(file);
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const div = document.createElement('div');
+                div.className = 'preview-item';
+                div.innerHTML = `<img src="${ev.target.result}"><button class="preview-remove" onclick="removePreview(this,'${file.name}')">&times;</button>`;
+                prev.appendChild(div);
+                prev.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        });
+        e.target.value = '';
+    }
+
+    function removePreview(btn, name) {
+        selectedImages = selectedImages.filter(f => f.name !== name);
+        btn.parentElement.remove();
+        if (!selectedImages.length) document.getElementById('imagePreview')?.classList.add('hidden');
+    }
+
+    // === Редактирование поста ===
+    async function startEdit(id) {
+        try {
+            const r = await fetch(`/api/posts/${id}/`, { credentials: 'include' });
+            const post = await r.json();
+            showPrompt('Редактировать', 'Текст', post.text, (newText) => {
+                if (newText && newText !== post.text) updatePost(id, newText);
+            });
+        } catch (e) { showToast('Ошибка', 'error'); }
+    }
+
+    async function updatePost(id, text) {
+        try {
+            const r = await fetch(`/api/posts/${id}/`, {
+                method: 'PUT',
+                headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ text })
+            });
+            if (!r.ok) throw 0;
+            showToast('Обновлено', 'success');
+            loadPosts();
+        } catch (e) { showToast('Ошибка', 'error'); }
+    }
+
+    // === Удаление поста ===
+    function askDelete(id) {
+        showConfirm('Удалить?', 'Это нельзя отменить', () => deletePost(id));
+    }
+
+    async function deletePost(id) {
+        try {
+            const r = await fetch(`/api/posts/${id}/`, {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                credentials: 'include'
+            });
+            if (!r.ok) throw 0;
+            showToast('Удалено', 'success');
+            loadPosts();
+        } catch (e) { showToast('Ошибка', 'error'); }
+    }
+
+    // === Поиск ===
+    function filterPosts(q) {
+        document.querySelectorAll('.post').forEach(el => {
+            const txt = el.querySelector('.post-text')?.textContent.toLowerCase() || '';
+            el.classList.toggle('hidden', !txt.includes(q.toLowerCase()));
+        });
+    }
+
+    // === Утилиты ===
+    function escapeHtml(t) { const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+    function getCookie(n) {
+        return document.cookie.split(';').reduce((a,c)=>{
+            const[k,v]=c.trim().split('='); return k===n?decodeURIComponent(v):a;
+        }, null);
+    }
+
+    // === ЛАЙКИ ===
+    async function toggleLike(postId) {
+        if (!currentUser) return showToast('Войдите для лайков', 'error');
+
+        const btn = event.currentTarget;
+        const countEl = btn.nextElementSibling;
+
+        try {
+            const isLiked = btn.classList.contains('liked');
+            const res = await fetch(`/api/posts/${postId}/like/`, {
+                method: isLiked ? 'DELETE' : 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                credentials: 'include'
+            });
+            if (!res.ok) throw 0;
+            const data = await res.json();
+            btn.classList.toggle('liked');
+            btn.textContent = data.liked ? '❤️' : '🤍';
+            countEl.textContent = data.likes_count;
+        } catch (e) { showToast('Ошибка', 'error'); }
+    }
+
+    // === КОММЕНТАРИИ ===
+    async function addComment(postId) {
+        const input = document.getElementById(`comment-input-${postId}`);
+        const text = input.value.trim();
+        if (!text) return;
+
+        try {
+            const res = await fetch(`/api/posts/${postId}/comments/`, {
+                method: 'POST',
+                headers: { 
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({ text })
+            });
+            if (!res.ok) throw 0;
+            input.value = '';
+            loadPosts();
+        } catch (e) { showToast('Ошибка', 'error'); }
+    }
+
+    async function editComment(id, text) {
+        showPrompt('Редактировать', 'Текст', text, async (newText) => {
+            if (!newText || newText === text) return;
+            try {
+                const res = await fetch(`/api/posts/comments/${id}/`, {
+                    method: 'PUT',
+                    headers: { 
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ text: newText })
+                });
+                if (!res.ok) throw 0;
+                showToast('Обновлено', 'success');
+                loadPosts();
+            } catch (e) { showToast('Ошибка', 'error'); }
+        });
+    }
+
+    async function deleteComment(id) {
+        showConfirm('Удалить комментарий?', '', async () => {
+            try {
+                const res = await fetch(`/api/posts/comments/${id}/`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                    credentials: 'include'
+                });
+                if (!res.ok) throw 0;
+                showToast('Удалено', 'success');
+                loadPosts();
+            } catch (e) { showToast('Ошибка', 'error'); }
+        });
+    }
+
+</script>
+</body>
+</html>
